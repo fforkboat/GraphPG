@@ -34,7 +34,7 @@
                 <Button Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF" ToolTip="create table">
                     <Image Source="pack://siteoforigin:,,,/Resources/file_30.868686868687px_1201732_easyicon.net.png" Height="30"/>
                 </Button>
-                <Button Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF" ToolTip="edit table">
+                <Button x:Name="ButtonForModifyColumn" Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF" ToolTip="edit table" Click="ButtonForModifyColumn_Click" IsEnabled="False">
                     <Image Source="pack://siteoforigin:,,,/Resources/file_31.363184079602px_1201736_easyicon.net.png" Height="30"/>
                 </Button>
                 <Button Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF" ToolTip="delete table">
@@ -45,8 +45,8 @@
         <StatusBar DockPanel.Dock="Bottom" Height="36" VerticalAlignment="Top"  Background="{x:Null}" BorderThickness="0,1,0,0" BorderBrush="#FF383838">
             <Label x:Name="LabelForStatus" Content="Hello" FontSize="10" Width="764" MouseLeave="StatusLabel_MouseLeave" />
         </StatusBar>
-        <DockPanel x:Name="ContentGrid">
-            <TreeView x:Name="DBTreeView" DockPanel.Dock="Left" Height="{Binding ActualHeight, ElementName=ContentGrid}" BorderThickness="0,0,1,0" BorderBrush="#FF968787" VerticalContentAlignment="Stretch" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,-0.4" Width="140" GotFocus="DBTreeView_GotFocus">
+        <DockPanel x:Name="ContentDockPanel">
+            <TreeView x:Name="DBTreeView" DockPanel.Dock="Left" Height="{Binding ActualHeight, ElementName=ContentDockPanel}" BorderThickness="0,0,1,0" BorderBrush="#FF968787" VerticalContentAlignment="Stretch" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,-0.4" Width="140" GotFocus="DBTreeView_GotFocus">
                 <TreeViewItem x:Name="Tree1" Header="DB1" Foreground="Black" MouseLeftButtonUp="Tree_DB_MouseLeftButtonUp">
                     <TreeViewItem Header="Table1" MouseLeftButtonUp="Tree_Table_MouseLeftButtonUp"/>
                     <TreeViewItem Header="Table2" MouseLeftButtonUp="Tree_Table_MouseLeftButtonUp"/>
@@ -71,7 +71,7 @@
                     </Button>
                 </WrapPanel>
             </Grid>
-            <Grid x:Name="GridForAddAndRemoveRow" DockPanel.Dock="Bottom" Height="35" VerticalAlignment="Bottom">
+            <Grid x:Name="GridForAddAndRemoveRow" DockPanel.Dock="Bottom" Height="35" VerticalAlignment="Bottom" Visibility="Collapsed">
                 <WrapPanel HorizontalAlignment="Right" Height="35" Margin="0" VerticalAlignment="Top" Width="85">
                     <Button x:Name="ButtonForAddRow" HorizontalAlignment="Right" VerticalAlignment="Top" Width="35" Height="35" Padding="0" BorderBrush="{x:Null}" ToolTip="add a row" Click="ButtonForAddRow_Click">
                         <Button.Background>
@@ -85,7 +85,8 @@
                     </Button>
                 </WrapPanel>
             </Grid>
-            <DataGrid x:Name="DataGridForTable" Margin="0" CellEditEnding="DataGridForTable_CellEditEnding" CanUserAddRows="False" CurrentCellChanged="DataGridForTable_CurrentCellChanged" BeginningEdit="DataGridForTable_BeginningEdit"/>
+            <DataGrid x:Name="DataGridForSchema" Visibility="Collapsed" CanUserAddRows="False" CellEditEnding="DataGridForTable_CellEditEnding" CurrentCellChanged="DataGridForTable_CurrentCellChanged"/>
+            <DataGrid x:Name="DataGridForContent" Margin="0" CellEditEnding="DataGridForTable_CellEditEnding" CanUserAddRows="False" CurrentCellChanged="DataGridForTable_CurrentCellChanged"/>
         </DockPanel>
     </DockPanel>
 </Controls:MetroWindow>

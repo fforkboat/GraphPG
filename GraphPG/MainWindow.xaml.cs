@@ -29,6 +29,10 @@ namespace GraphPG
             Controller.GetController().SetMainWindow(this);
         }
 
+        private void DBTreeView_GotFocus(object sender, RoutedEventArgs e)
+        {
+            ButtonForRemoveRow.IsEnabled = false;
+        }
         public void Tree_DB_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             TreeViewItem treeItem = (TreeViewItem)sender;
@@ -41,10 +45,18 @@ namespace GraphPG
 
         public void Tree_Table_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            GridForAddAndRemoveRow.Visibility = Visibility.Visible;
+            DataGridForContent.Visibility = Visibility.Visible;
+            DataGridForSchema.Visibility = Visibility.Collapsed;
+            ButtonForModifyColumn.IsEnabled = true;
+
             var table = (TreeViewItem)sender;
             var database = (TreeViewItem)table.Parent;
+            _openTableName = table.Header.ToString();
+            _openDBName = table.Header.ToString();
 
-            Controller.GetController().OpenTable(database.Header.ToString(), table.Header.ToString());
+            Controller.GetController().DGContent = DataGridContent.ContentGrid;
+            Controller.GetController().OpenTable(_openDBName, _openTableName);
             e.Handled = true;
         }
 
@@ -62,72 +74,11 @@ namespace GraphPG
 
         private void DataGridForTable_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            string a = (DataGridForTable.ItemsSource as DataView).Table.Rows[e.Row.GetIndex()][e.Column.DisplayIndex].ToString();
+            string a = (DataGridForContent.ItemsSource as DataView).Table.Rows[e.Row.GetIndex()][e.Column.DisplayIndex].ToString();
             if ((e.EditingElement as TextBox).Text.Equals(a))
                 return;
 
-            GridForModifyTableAction.Visibility = Visibility.Visible;
-            DBTreeView.IsEnabled = false;
-            ToolBarMain.IsEnabled = false;
-            GridForAddAndRemoveRow.IsEnabled = false;
-        }
-
-        private void ButtonForSaveChanges_Click(object sender, RoutedEventArgs e)
-        {
-            Controller.GetController().UpdateTable();
-
-            GridForModifyTableAction.Visibility = Visibility.Collapsed;
-            DBTreeView.IsEnabled = true;
-            ToolBarMain.IsEnabled = true;
-            GridForAddAndRemoveRow.IsEnabled = true;
-           
-        }
-
-        private void ButtonForCancelChanges_Click(object sender, RoutedEventArgs e)
-        {
-            Controller.GetController().RestoreTable();
-
-            GridForModifyTableAction.Visibility = Visibility.Collapsed;
-            DBTreeView.IsEnabled = true;
-            ToolBarMain.IsEnabled = true;
-            GridForAddAndRemoveRow.IsEnabled = true;
-            DataGridForTable.CellEditEnding += DataGridForTable_CellEditEnding;
-        }
-
-        private void StatusLabel_MouseLeave(object sender, MouseEventArgs e)
-        {
-            LabelForStatus.Foreground = new SolidColorBrush(Color.FromRgb(0, 0, 0));
-        }
-
-        private void ButtonForAddRow_Click(object sender, RoutedEventArgs e)
-        {
-            var dataView = DataGridForTable.ItemsSource as DataView;
-            dataView.AddNew();
-            DataGridForTable.CellEditEnding -= DataGridForTable_CellEditEnding;
-            GridForModifyTableAction.Visibility = Visibility.Visible;
-            DBTreeView.IsEnabled = false;
-            ToolBarMain.IsEnabled = false;
-            GridForAddAndRemoveRow.IsEnabled = false;
-
-            for (int i = 0; i < dataView.Count - 1 ; i++)
-            {
-                var row = DataGridForTable.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
-                row.IsEnabled = false;
-            }
-            var newRow = DataGridForTable.ItemContainerGenerator.ContainerFromIndex(4) as DataGridRow;
-            if (newRow == null)
-            {
-                DataGridForTable.UpdateLayout();
-                DataGridForTable.ScrollIntoView(DataGridForTable.Items[4]);
-                newRow = DataGridForTable.ItemContainerGenerator.ContainerFromIndex(4) as DataGridRow;
-            }
-            newRow.IsSelected = true;
-        }
-
-        private void ButtonForRemoveRow_Click(object sender, RoutedEventArgs e)
-        {
-            Controller.GetController().RemoveRow(DataGridForTable.SelectedIndex);
-
+            OperationInModifingTable();
         }
 
         private void DataGridForTable_CurrentCellChanged(object sender, EventArgs e)
@@ -135,14 +86,105 @@ namespace GraphPG
             ButtonForRemoveRow.IsEnabled = true;
         }
 
-        private void DataGridForTable_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        private void ButtonForSaveChanges_Click(object sender, RoutedEventArgs e)
         {
+            Controller.GetController().UpdateTable();
 
+            OperationAfterModifingTable();
         }
 
-        private void DBTreeView_GotFocus(object sender, RoutedEventArgs e)
+        private void ButtonForCancelChanges_Click(object sender, RoutedEventArgs e)
         {
+            Controller.GetController().RestoreTable();
+
+            OperationAfterModifingTable();
+        }
+
+        private void ButtonForAddRow_Click(object sender, RoutedEventArgs e)
+        {
+            OperationInModifingTable();
+
+            var dataView = DataGridForContent.ItemsSource as DataView;
+            dataView.AddNew();
+            for (int i = 0; i < dataView.Count - 1 ; i++)
+            {
+                var row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                if (row == null)
+                {
+                    DataGridForContent.UpdateLayout();
+                    DataGridForContent.ScrollIntoView(DataGridForContent.Items[i]);
+                    row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                }
+                row.IsEnabled = false;
+                row.IsSelected = false; 
+            }
+
+            var newRow = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(dataView.Count - 1) as DataGridRow;
+            if (newRow == null)
+            {
+                DataGridForContent.UpdateLayout();
+                DataGridForContent.ScrollIntoView(DataGridForContent.Items[dataView.Count - 1]);
+                newRow = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(dataView.Count - 1) as DataGridRow;
+            }
+            newRow.IsSelected = true;
+        }
+
+        private void ButtonForRemoveRow_Click(object sender, RoutedEventArgs e)
+        {
+            OperationInModifingTable();
+
+            var dataView = DataGridForContent.ItemsSource as DataView;
+            dataView.Delete(DataGridForContent.SelectedIndex);
+        }
+
+        private void StatusLabel_MouseLeave(object sender, MouseEventArgs e)
+        {
+            LabelForStatus.Foreground = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+        }
+
+        private void OperationInModifingTable()
+        {
+            DataGridForContent.CellEditEnding -= DataGridForTable_CellEditEnding;
+            GridForModifyTableAction.Visibility = Visibility.Visible;
+            DBTreeView.IsEnabled = false;
+            ToolBarMain.IsEnabled = false;
+            GridForAddAndRemoveRow.IsEnabled = false;
+        }
+
+        private void OperationAfterModifingTable()
+        {
+            GridForModifyTableAction.Visibility = Visibility.Collapsed;
+            DBTreeView.IsEnabled = true;
+            ToolBarMain.IsEnabled = true;
+            GridForAddAndRemoveRow.IsEnabled = true;
+            DataGridForContent.CellEditEnding += DataGridForTable_CellEditEnding;
+
+            var dataView = DataGridForContent.ItemsSource as DataView;
+            for (int i = 0; i < dataView.Count; i++)
+            {
+                var row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                if (row == null)
+                {
+                    DataGridForContent.UpdateLayout();
+                    DataGridForContent.ScrollIntoView(DataGridForContent.Items[i]);
+                    row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                }
+                row.IsEnabled = true;
+                row.IsSelected = false;
+            }
             ButtonForRemoveRow.IsEnabled = false;
         }
+
+        private void ButtonForModifyColumn_Click(object sender, RoutedEventArgs e)
+        {
+            DataGridForContent.Visibility = Visibility.Collapsed;
+            DataGridForSchema.Visibility = Visibility.Visible;
+
+            Controller.GetController().DGContent = DataGridContent.SchemaGrid;
+            Controller.GetController().OpenTable(_openDBName, _openTableName);
+        }
+
+        private string _openTableName;
+        private string _openDBName;
     }
 }

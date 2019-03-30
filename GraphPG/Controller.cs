@@ -13,12 +13,20 @@ using MahApps.Metro.Controls;
 
 namespace GraphPG
 {
+    enum DataGridContent
+    {
+        ContentGrid,
+        SchemaGrid
+    }
+
     class Controller
     {
         public static Controller GetController()
         {
             return controller;
         }
+
+        public DataGridContent DGContent { get; set; }
 
         public bool ConnectDB(string connectString, out string resString)
         {
@@ -48,46 +56,85 @@ namespace GraphPG
 
         public void OpenTable(string DBName, string TBName)
         {
-            string commandString = "select * from " + TBName;
-            NpgsqlCommand command = new NpgsqlCommand(commandString, _connection);
-            _adapter = new NpgsqlDataAdapter(command);
-            _dataTable = new DataTable();
-            _adapter.Fill(_dataTable);
+            if (DGContent == DataGridContent.ContentGrid)
+            {
+                string cmdStr = "select * from " + TBName;
+                using (NpgsqlCommand cmd = new NpgsqlCommand(cmdStr, _connection))
+                {
+                    _adapter = new NpgsqlDataAdapter(cmd);
+                    _dataTable = new DataTable();
+                    _adapter.Fill(_dataTable);
+                }
 
-            _mainWindow.DataGridForTable.ItemsSource = _dataTable.DefaultView;
-            _mainWindow.GridForAddAndRemoveRow.Visibility = Visibility.Visible;
+                _mainWindow.DataGridForContent.ItemsSource = _dataTable.DefaultView;
+            }
+            else
+            {
+                string cmdStr = string.Format("select column_name, data_type from information_schema.columns where table_name='{0}'", TBName);
+                using (NpgsqlCommand cmd = new NpgsqlCommand(cmdStr, _connection))
+                {
+                    _adapter = new NpgsqlDataAdapter(cmd);
+                    _dataTable = new DataTable(TBName);
+                    _adapter.Fill(_dataTable);
+                    _dataTable.AcceptChanges();
+                }
+
+                _mainWindow.DataGridForSchema.ItemsSource = _dataTable.DefaultView;
+            }
         }
 
         public void UpdateTable()
         {
-            NpgsqlCommandBuilder builder = new NpgsqlCommandBuilder(_adapter);
-            try
+            if (DGContent == DataGridContent.ContentGrid)
             {
-                _adapter.Update(_dataTable);
+                NpgsqlCommandBuilder builder = new NpgsqlCommandBuilder(_adapter);
+                try
+                {
+                    _adapter.Update(_dataTable);
+                }
+                catch (Exception ex)
+                {
+                    _mainWindow.ShowMessageAsync("error", ex.Message);
+                    _mainWindow.LabelForStatus.Content = ex.Message;
+                    _mainWindow.LabelForStatus.Foreground = new SolidColorBrush(Color.FromRgb(255, 0, 0));
+                    RestoreTable();
+                }
             }
-            catch (Exception ex)
+            else
             {
-                _mainWindow.ShowMessageAsync("error", ex.Message);
-                _mainWindow.LabelForStatus.Content = ex.Message;
-                _mainWindow.LabelForStatus.Foreground = new SolidColorBrush(Color.FromRgb(255, 0, 0));
-                RestoreTable();
+                var changes = _dataTable.GetChanges();
+                string cmdStr = "";
+                using (NpgsqlCommand cmd = new NpgsqlCommand())
+                {
+                    foreach (DataRow dr in changes.Rows)
+                    {
+                        if (dr.RowState == DataRowState.Modified)
+                        {
+                            foreach (DataColumn dc in changes.Columns)
+                            {
+                                if (dc.ColumnName.Equals("column_name"))
+                                {
+                                    cmdStr = string.Format("alter table {0} rename column {1} to {2}", _dataTable.TableName,
+                                                            dr[dc, DataRowVersion.Original], dr[dc, DataRowVersion.Current]);
+                                    cmd.CommandText = cmdStr;
+                                    cmd.Connection = _connection;
+                                    cmd.ExecuteNonQuery();
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
+
         }
 
         public void RestoreTable()
         {
-            _mainWindow.DataGridForTable.ItemsSource = null;
+            _mainWindow.DataGridForContent.ItemsSource = null;
             _dataTable.Clear();
             _adapter.Fill(_dataTable);
-            _mainWindow.DataGridForTable.ItemsSource = _dataTable.DefaultView;
-        }
-
-        public void RemoveRow(int index)
-        {
-            _dataTable.Rows[index].Delete();
-//             _dataTable.AcceptChanges();
-            
-            UpdateTable();
+            _mainWindow.DataGridForContent.ItemsSource = _dataTable.DefaultView;
         }
 
         private void GenerateDBTree()
