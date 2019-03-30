@@ -1,0 +1,91 @@
+﻿<Controls:MetroWindow x:Class="GraphPG.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:local="clr-namespace:GraphPG"
+                      xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+                      mc:Ignorable="d"
+        Title="GraphPG" Height="458" Width="780"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        Background="{DynamicResource MaterialDesignPaper}"
+        ShowTitleBar="True"
+        TextElement.FontWeight="Medium"
+        TextElement.FontSize="14"
+        FontFamily="pack://application:,,,/MaterialDesignThemes.Wpf;component/Resources/Roboto/#Roboto" WindowStyle="None">
+    <DockPanel Margin="0,0,0,-6.4">
+        <ToolBarTray x:Name="ToolBarTrayMain" DockPanel.Dock="Top" Height="40" Background="#FFD1D1D1">
+            <ToolBar x:Name="ToolBarMain" ToolBarTray.IsLocked="True" RenderTransformOrigin="0.5,0.5" Background="White" Width="{Binding ActualWidth, ElementName=ToolBarTrayMain}" Margin="0,0,-0.4,-27.6" VerticalAlignment="Top" HorizontalAlignment="Left">
+                <Button x:Name="Button_Connect_DB" Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-5.6" Foreground="#DDFFFFFF" ToolTip="connect database" Click="Button_ConnectDB_Click">
+                    <Image Source="pack://siteoforigin:,,,/Resources/connect_32px_557755_easyicon.net.png" Height="30"/>
+                </Button>
+                <Button x:Name="ButtonForDisConnect" Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF" Click="ButtonForDisConnect_Click">
+                    <Image Source="pack://siteoforigin:,,,/Resources/disconnect_32px_557768_easyicon.net.png" Height="30" ToolTip="deconnect database"/>
+                </Button>
+                <Separator/>
+                <Button Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF"  ToolTip="create database">
+                    <Image Source="pack://siteoforigin:,,,/Resources/database_31.02538071066px_1201709_easyicon.net.png" Height="30"/>
+                </Button>
+                <Button Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Background="White" Foreground="#DDFFFFFF" ToolTip="delete database">
+                    <Image Source="pack://siteoforigin:,,,/Resources/database_30.862944162437px_1201711_easyicon.net.png" Height="30"/>
+                </Button>
+                <Separator/>
+                <Button Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF" ToolTip="create table">
+                    <Image Source="pack://siteoforigin:,,,/Resources/file_30.868686868687px_1201732_easyicon.net.png" Height="30"/>
+                </Button>
+                <Button Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF" ToolTip="edit table">
+                    <Image Source="pack://siteoforigin:,,,/Resources/file_31.363184079602px_1201736_easyicon.net.png" Height="30"/>
+                </Button>
+                <Button Height="35" VerticalAlignment="Top" Width="36" Padding="0,0,0,-4" Margin="0,0,0,-0.6" Foreground="#DDFFFFFF" ToolTip="delete table">
+                    <Image Source="pack://siteoforigin:,,,/Resources/file_30.868686868687px_1201745_easyicon.net.png" Height="30"/>
+                </Button>
+            </ToolBar>
+        </ToolBarTray>
+        <StatusBar DockPanel.Dock="Bottom" Height="36" VerticalAlignment="Top"  Background="{x:Null}" BorderThickness="0,1,0,0" BorderBrush="#FF383838">
+            <Label x:Name="LabelForStatus" Content="Hello" FontSize="10" Width="764" MouseLeave="StatusLabel_MouseLeave" />
+        </StatusBar>
+        <DockPanel x:Name="ContentGrid">
+            <TreeView x:Name="DBTreeView" DockPanel.Dock="Left" Height="{Binding ActualHeight, ElementName=ContentGrid}" BorderThickness="0,0,1,0" BorderBrush="#FF968787" VerticalContentAlignment="Stretch" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,-0.4" Width="140" GotFocus="DBTreeView_GotFocus">
+                <TreeViewItem x:Name="Tree1" Header="DB1" Foreground="Black" MouseLeftButtonUp="Tree_DB_MouseLeftButtonUp">
+                    <TreeViewItem Header="Table1" MouseLeftButtonUp="Tree_Table_MouseLeftButtonUp"/>
+                    <TreeViewItem Header="Table2" MouseLeftButtonUp="Tree_Table_MouseLeftButtonUp"/>
+                </TreeViewItem>
+                <TreeViewItem x:Name="Tree2" Header="DB2" Foreground="Black" MouseLeftButtonUp="Tree_DB_MouseLeftButtonUp">
+                    <TreeViewItem Header="Table1" MouseLeftButtonUp="Tree_Table_MouseLeftButtonUp"/>
+                    <TreeViewItem Header="Table2" MouseLeftButtonUp="Tree_Table_MouseLeftButtonUp"/>
+                </TreeViewItem>
+
+            </TreeView>
+            <Grid x:Name="GridForModifyTableAction" DockPanel.Dock="Top" Height="25" VerticalAlignment="Top" Visibility="Collapsed" >
+                <WrapPanel HorizontalAlignment="Center" Height="25" Margin="0" VerticalAlignment="Top" Width="63">
+                    <Button x:Name="ButtonForSaveChanges" Width="25" VerticalAlignment="Top" HorizontalAlignment="Center" Height="25" BorderBrush="{x:Null}" ToolTip="Save Changes" Click="ButtonForSaveChanges_Click">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://siteoforigin:,,,/Resources/confirm_24px_1232396_easyicon.net.png"/>
+                        </Button.Background>
+                    </Button>
+                    <Button x:Name="ButtonForCancelChanges" Width="25" Height="25" Margin="13,0,0,0" BorderBrush="{x:Null}" ToolTip="Cancel changes" Click="ButtonForCancelChanges_Click">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://siteoforigin:,,,/Resources/cancel_24px_1232349_easyicon.net.png"/>
+                        </Button.Background>
+                    </Button>
+                </WrapPanel>
+            </Grid>
+            <Grid x:Name="GridForAddAndRemoveRow" DockPanel.Dock="Bottom" Height="35" VerticalAlignment="Bottom">
+                <WrapPanel HorizontalAlignment="Right" Height="35" Margin="0" VerticalAlignment="Top" Width="85">
+                    <Button x:Name="ButtonForAddRow" HorizontalAlignment="Right" VerticalAlignment="Top" Width="35" Height="35" Padding="0" BorderBrush="{x:Null}" ToolTip="add a row" Click="ButtonForAddRow_Click">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://siteoforigin:,,,/Resources/add_32px_1228973_easyicon.net.png"/>
+                        </Button.Background>
+                    </Button>
+                    <Button x:Name="ButtonForRemoveRow" HorizontalAlignment="Right" Margin="15,0,0,0" VerticalAlignment="Top" Width="35" Height="35" Padding="0" BorderBrush="{x:Null}" ToolTip="remove the selected row" IsEnabled="False" Click="ButtonForRemoveRow_Click">
+                        <Button.Background>
+                            <ImageBrush ImageSource="pack://siteoforigin:,,,/Resources/remove_32px_1229015_easyicon.net.png"/>
+                        </Button.Background>
+                    </Button>
+                </WrapPanel>
+            </Grid>
+            <DataGrid x:Name="DataGridForTable" Margin="0" CellEditEnding="DataGridForTable_CellEditEnding" CanUserAddRows="False" CurrentCellChanged="DataGridForTable_CurrentCellChanged" BeginningEdit="DataGridForTable_BeginningEdit"/>
+        </DockPanel>
+    </DockPanel>
+</Controls:MetroWindow>
