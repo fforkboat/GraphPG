@@ -19,17 +19,21 @@ namespace GraphPG
     /// </summary>
     public partial class ConnectWindow : Window
     {
-        public ConnectWindow()
+        public ConnectWindow(Window ownerWindow)
         {
             InitializeComponent();
+
+            Owner = ownerWindow;
+            WindowStartupLocation = WindowStartupLocation.CenterOwner;
         }
+
 
         private void ButtonForConnect_Click(object sender, RoutedEventArgs e)
         {
             var connectString = String.Format("Host={0};Username={1};Password={2};Database={3};",
                                                TextBoxForHost.Text, TextBoxForUsername.Text, Password.Password, TextBoxForDBName.Text);
             string resString;
-            if (!Controller.GetController().ConnectDB(connectString, out resString))
+            if (!Controller.GetController().ConnectDB(connectString, out resString, new ConnectionSettings((bool)CheckBoxForShowSystemTables.IsChecked, (bool)CheckBoxForAutomaticallyOpen.IsChecked)))
             {
                 LabelForErrorHint.Content = resString;
                 LabelForErrorHint.Visibility = Visibility.Visible;

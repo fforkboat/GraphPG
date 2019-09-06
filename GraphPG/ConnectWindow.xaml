@@ -11,10 +11,10 @@
         TextElement.FontSize="14"
         FontFamily="pack://application:,,,/MaterialDesignThemes.Wpf;component/Resources/Roboto/#Roboto"
         mc:Ignorable="d"
-        Title="Connect Database" Height="400" Width="320" Icon="pack://siteoforigin:,,,/Resources/connect_32px_557755_easyicon.net.png">
+        Title="Connect Database" Height="412" Width="324" Icon="pack://siteoforigin:,,,/Resources/connect_32px_557755_easyicon.net.png">
     <Grid Margin="0,0,-6.4,0.4" Width="320">
-        <StackPanel HorizontalAlignment="Left" Height="337" VerticalAlignment="Top" Width="320">
-            <Grid Height="59" Margin="0,43,20,0" Width="320">
+        <StackPanel HorizontalAlignment="Left" Height="340" VerticalAlignment="Top" Width="320">
+            <Grid Height="59" Margin="0,31,20,0" Width="320">
                 <WrapPanel Margin="76,11,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="157">
                     <materialDesign:PackIcon Kind="DesktopClassic" HorizontalAlignment="Left" VerticalAlignment="Top" Height="26" Width="40" RenderTransformOrigin="1.076,0.623" />
                     <TextBox x:Name="TextBoxForHost" Height="26" TextWrapping="Wrap" HorizontalAlignment="Center" Width="115" FontSize="14" materialDesign:HintAssist.Hint="Host" Style="{StaticResource MaterialDesignFloatingHintTextBox}" VerticalAlignment="Top" Padding="0,-5,0,0" CaretBrush="#FF4FB73A" SelectionBrush="{x:Null}">
@@ -39,9 +39,14 @@
                     <PasswordBox x:Name="Password" Height="28" HorizontalAlignment="Center" Width="115" FontSize="14" materialDesign:HintAssist.Hint="Password" Style="{StaticResource MaterialDesignFloatingHintPasswordBox}" VerticalAlignment="Top" Padding="0,-5,0,0"/>
                 </WrapPanel>
             </Grid>
+            <Grid Height="31" Margin="0,-3,0,0" Width="320">
+                <WrapPanel Margin="75,11,90,20" HorizontalAlignment="Center" VerticalAlignment="Center" Height="28"/>
+                <CheckBox x:Name="CheckBoxForShowSystemTables" Content="Show system table" HorizontalAlignment="Left" Margin="12,6,0,0" VerticalAlignment="Top" FontSize="10"/>
+                <CheckBox x:Name="CheckBoxForAutomaticallyOpen" Content="Automatically open next time" HorizontalAlignment="Left" Margin="152,6,0,0" VerticalAlignment="Top" FontSize="10"/>
+            </Grid>
             <Button x:Name="ButtonForConnect" Margin="0,22,0,0" Content="Connect" HorizontalAlignment="Center" Width="92" VerticalAlignment="Center" Background="#FF2EC550" BorderBrush="{x:Null}" Foreground="#DDFFFFFF" Click="ButtonForConnect_Click" />
 
         </StackPanel>
-        <Label x:Name="LabelForErrorHint" Content="Failed to connect" HorizontalAlignment="Center" Margin="0,340,0,0" VerticalAlignment="Top" Foreground="#DDFF0000" Visibility="Hidden"/>
+        <Label x:Name="LabelForErrorHint" Content="Failed to connect" Margin="10,342,0,0" VerticalAlignment="Top" Foreground="#DDFF0000" HorizontalAlignment="Left" Width="300" FontSize="11" HorizontalContentAlignment="Center" Visibility="Hidden"/>
     </Grid>
 </Window>

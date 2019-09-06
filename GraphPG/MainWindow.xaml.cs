@@ -15,6 +15,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using MahApps.Metro.Controls;
+using MahApps.Metro.Controls.Dialogs;
+using MaterialDesignThemes.Wpf;
 
 namespace GraphPG
 {
@@ -27,6 +29,9 @@ namespace GraphPG
         {
             InitializeComponent();
             Controller.GetController().SetMainWindow(this);
+            Controller.GetController().LoadSavedConnections();
+
+            DataGridComboxColumnForSchema.ItemsSource = new List<string> { "character varying", "integer", "float"};
         }
 
         private void DBTreeView_GotFocus(object sender, RoutedEventArgs e)
@@ -35,6 +40,13 @@ namespace GraphPG
         }
         public void Tree_DB_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            _openDBName = (sender as TreeViewItem).Header.ToString();
+            Controller.GetController().SetCurrentConnection(_openDBName);
+
+            ButtonForDisConnect.IsEnabled = true;
+            ButtonForDropDB.IsEnabled = true;
+            ButtonForCreateTable.IsEnabled = true;
+
             TreeViewItem treeItem = (TreeViewItem)sender;
             if (treeItem == null || e.Handled)
                 return;
@@ -45,15 +57,17 @@ namespace GraphPG
 
         public void Tree_Table_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            _openTableName = (sender as TreeViewItem).Header.ToString();
+            _openDBName = ((sender as TreeViewItem).Parent as TreeViewItem).Header.ToString();
+            Controller.GetController().SetCurrentConnection(_openDBName);
+
             GridForAddAndRemoveRow.Visibility = Visibility.Visible;
             DataGridForContent.Visibility = Visibility.Visible;
             DataGridForSchema.Visibility = Visibility.Collapsed;
             ButtonForModifyColumn.IsEnabled = true;
-
-            var table = (TreeViewItem)sender;
-            var database = (TreeViewItem)table.Parent;
-            _openTableName = table.Header.ToString();
-            _openDBName = table.Header.ToString();
+            ButtonForDeleteTable.IsEnabled = true;
+            ButtonForDisConnect.IsEnabled = true;
+            ButtonForDropDB.IsEnabled = true;
 
             Controller.GetController().DGContent = DataGridContent.ContentGrid;
             Controller.GetController().OpenTable(_openDBName, _openTableName);
@@ -62,40 +76,67 @@ namespace GraphPG
 
         private void Button_ConnectDB_Click(object sender, RoutedEventArgs e)
         {
-            var connectForm = new ConnectWindow();
-            connectForm.Owner = this;
-            connectForm.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            var connectForm = new ConnectWindow(this);
             connectForm.ShowDialog();
         }
 
-        private void ButtonForDisConnect_Click(object sender, RoutedEventArgs e)
+        private void OperationForRemoveDBTreeViewItem()
         {
+            GridForAddAndRemoveRow.Visibility = Visibility.Collapsed;
+            ButtonForDisConnect.IsEnabled = false;
+            ButtonForModifyColumn.IsEnabled = false;
+            ButtonForDeleteTable.IsEnabled = false;
+            ButtonForCreateTable.IsEnabled = false;
+            ButtonForDropDB.IsEnabled = false;
+            DataGridForContent.ItemsSource = null;
         }
 
-        private void DataGridForTable_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        private void ButtonForDisconnect_Click(object sender, RoutedEventArgs e)
         {
-            string a = (DataGridForContent.ItemsSource as DataView).Table.Rows[e.Row.GetIndex()][e.Column.DisplayIndex].ToString();
-            if ((e.EditingElement as TextBox).Text.Equals(a))
-                return;
+            Controller.GetController().DisconnectCurrentDB();
 
+            var DBRoot = DBTreeView.FindChild<TreeViewItem>(_openDBName);
+            DBTreeView.Items.Remove(DBRoot);
+
+            OperationForRemoveDBTreeViewItem();
+
+        }
+
+        private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            var datagrid = sender as DataGrid;
+            string originalValue = (datagrid.ItemsSource as DataView).Table.Rows[e.Row.GetIndex()][e.Column.DisplayIndex].ToString();
+
+            if (e.EditingElement is ComboBox && (e.EditingElement as ComboBox).Text.Equals(originalValue))
+                return;
+            if (e.EditingElement is TextBox && (e.EditingElement as TextBox).Text.Equals(originalValue))
+                return;
+            if (e.EditingElement is NumericUpDown && (e.EditingElement as NumericUpDown).Value.ToString().Equals(originalValue))
+                return;
+            if (e.EditingElement is CheckBox)
+            {
+                if ((originalValue == "YES" && (bool)(e.EditingElement as CheckBox).IsChecked) || (originalValue == "NO" && !(bool)(e.EditingElement as CheckBox).IsChecked))
+                    return;
+            }
+                
             OperationInModifingTable();
         }
 
-        private void DataGridForTable_CurrentCellChanged(object sender, EventArgs e)
+        private void DataGrid_CurrentCellChanged(object sender, EventArgs e)
         {
             ButtonForRemoveRow.IsEnabled = true;
         }
 
         private void ButtonForSaveChanges_Click(object sender, RoutedEventArgs e)
         {
-            Controller.GetController().UpdateTable();
+            Controller.GetController().UpdateCurrentTable();
 
             OperationAfterModifingTable();
         }
 
         private void ButtonForCancelChanges_Click(object sender, RoutedEventArgs e)
         {
-            Controller.GetController().RestoreTable();
+            Controller.GetController().RestoreCurrentTable();
 
             OperationAfterModifingTable();
         }
@@ -104,37 +145,71 @@ namespace GraphPG
         {
             OperationInModifingTable();
 
-            var dataView = DataGridForContent.ItemsSource as DataView;
-            dataView.AddNew();
-            for (int i = 0; i < dataView.Count - 1 ; i++)
+            if (Controller.GetController().DGContent == DataGridContent.ContentGrid)
             {
-                var row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
-                if (row == null)
+                DataView dataView = DataGridForContent.ItemsSource as DataView;
+                dataView.AddNew();
+
+                for (int i = 0; i < dataView.Count - 1; i++)
                 {
-                    DataGridForContent.UpdateLayout();
-                    DataGridForContent.ScrollIntoView(DataGridForContent.Items[i]);
-                    row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                    var row = DataGridForContent.GetRow(i);
+                    row.IsEnabled = false;
+                    row.IsSelected = false;
                 }
-                row.IsEnabled = false;
-                row.IsSelected = false; 
+
+                var newRow = DataGridForContent.GetRow(dataView.Count - 1);
+                newRow.IsSelected = true;
             }
 
-            var newRow = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(dataView.Count - 1) as DataGridRow;
-            if (newRow == null)
+            else
             {
-                DataGridForContent.UpdateLayout();
-                DataGridForContent.ScrollIntoView(DataGridForContent.Items[dataView.Count - 1]);
-                newRow = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(dataView.Count - 1) as DataGridRow;
+                DataView dataView = DataGridForSchema.ItemsSource as DataView;
+                dataView.AddNew();
+
+                for (int i = 0; i < dataView.Count - 1; i++)
+                {
+                    DataGridRow row = DataGridForSchema.GetRow(i);
+                    row.IsEnabled = false;
+                    row.IsSelected = false;
+                }
+
+                DataGridRow newRow = DataGridForSchema.GetRow(dataView.Count - 1);
+                newRow.IsSelected = true;
+
             }
-            newRow.IsSelected = true;
         }
 
         private void ButtonForRemoveRow_Click(object sender, RoutedEventArgs e)
         {
             OperationInModifingTable();
 
-            var dataView = DataGridForContent.ItemsSource as DataView;
-            dataView.Delete(DataGridForContent.SelectedIndex);
+            DataView dataView;
+            if (Controller.GetController().DGContent == DataGridContent.ContentGrid)
+            {
+                dataView = DataGridForContent.ItemsSource as DataView;
+
+                for (int i = dataView.Count - 1; i >= 0; i--)
+                {
+                    var row = DataGridForContent.GetRow(i);
+                    if (row.IsSelected)
+                    {
+                        dataView.Delete(i);
+                    }
+                }
+            }
+            else
+            {
+                dataView = DataGridForSchema.ItemsSource as DataView;
+
+                for (int i = dataView.Count - 1; i >= 0; i--)
+                {
+                    var row = DataGridForSchema.GetRow(i);
+                    if (row.IsSelected)
+                    {
+                        dataView.Delete(i);
+                    }
+                }
+            }
         }
 
         private void StatusLabel_MouseLeave(object sender, MouseEventArgs e)
@@ -144,11 +219,19 @@ namespace GraphPG
 
         private void OperationInModifingTable()
         {
-            DataGridForContent.CellEditEnding -= DataGridForTable_CellEditEnding;
             GridForModifyTableAction.Visibility = Visibility.Visible;
             DBTreeView.IsEnabled = false;
             ToolBarMain.IsEnabled = false;
             GridForAddAndRemoveRow.IsEnabled = false;
+
+            if (Controller.GetController().DGContent == DataGridContent.ContentGrid)
+            {
+                DataGridForContent.CellEditEnding -= DataGrid_CellEditEnding;
+            }
+            else
+            {
+                DataGridForSchema.CellEditEnding -= DataGrid_CellEditEnding;
+            }
         }
 
         private void OperationAfterModifingTable()
@@ -157,28 +240,50 @@ namespace GraphPG
             DBTreeView.IsEnabled = true;
             ToolBarMain.IsEnabled = true;
             GridForAddAndRemoveRow.IsEnabled = true;
-            DataGridForContent.CellEditEnding += DataGridForTable_CellEditEnding;
-
-            var dataView = DataGridForContent.ItemsSource as DataView;
-            for (int i = 0; i < dataView.Count; i++)
-            {
-                var row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
-                if (row == null)
-                {
-                    DataGridForContent.UpdateLayout();
-                    DataGridForContent.ScrollIntoView(DataGridForContent.Items[i]);
-                    row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
-                }
-                row.IsEnabled = true;
-                row.IsSelected = false;
-            }
             ButtonForRemoveRow.IsEnabled = false;
+
+            if (Controller.GetController().DGContent == DataGridContent.ContentGrid)
+            {
+                DataGridForContent.CellEditEnding += DataGrid_CellEditEnding;
+                var dataView = DataGridForContent.ItemsSource as DataView;
+                for (int i = 0; i < dataView.Count; i++)
+                {
+                    var row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                    if (row == null)
+                    {
+                        DataGridForContent.UpdateLayout();
+                        DataGridForContent.ScrollIntoView(DataGridForContent.Items[i]);
+                        row = DataGridForContent.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                    }
+                    row.IsEnabled = true;
+                    row.IsSelected = false;
+                }
+            }
+            else
+            {
+                DataGridForSchema.CellEditEnding += DataGrid_CellEditEnding;
+                var dataView = DataGridForSchema.ItemsSource as DataView;
+                for (int i = 0; i < dataView.Count; i++)
+                {
+                    var row = DataGridForSchema.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                    if (row == null)
+                    {
+                        DataGridForSchema.UpdateLayout();
+                        DataGridForSchema.ScrollIntoView(DataGridForSchema.Items[i]);
+                        row = DataGridForSchema.ItemContainerGenerator.ContainerFromIndex(i) as DataGridRow;
+                    }
+
+                    row.IsEnabled = true;
+                    row.IsSelected = false;
+                }
+            }
         }
 
         private void ButtonForModifyColumn_Click(object sender, RoutedEventArgs e)
         {
             DataGridForContent.Visibility = Visibility.Collapsed;
             DataGridForSchema.Visibility = Visibility.Visible;
+            ButtonForDeleteTable.IsEnabled = false;
 
             Controller.GetController().DGContent = DataGridContent.SchemaGrid;
             Controller.GetController().OpenTable(_openDBName, _openTableName);
@@ -186,5 +291,74 @@ namespace GraphPG
 
         private string _openTableName;
         private string _openDBName;
+
+//         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+//         {
+//             var dataGridCell = (sender as FrameworkElement).Parent as DataGridCell;
+//            
+//             var dataGridRow = dataGridCell.Parent as DataGridRow;
+// 
+//             if (e.Source.ToString() == "character varying")
+//             {
+//                 DataGridForSchema.GetCellContent(dataGridRow.GetIndex(), 2).IsEnabled = true;
+//             }
+//             else
+//             {
+//                 DataGridForSchema.GetCellContent(dataGridRow.GetIndex(), 2).IsEnabled = false;
+//             }
+//         }
+// 
+//         private void ButtonForDisablingCheckbox_Click(object sender, RoutedEventArgs e)
+//         {
+//             // The following line can reach the purpose of disabling the control in the cell
+//             // DataGridForSchema.GetCell(0, 3).IsEnabled = false;
+// 
+//             // The following line can not reach that purpose
+//             (DataGridForSchema.GetCell(0, 3).Content as CheckBox).IsEnabled = false;
+// 
+//         }
+
+        private void ButtonForDropTable_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new ConfirmationDialog(this, "Be sure to drop the table: " + _openTableName);
+            dialog.ShowDialog();
+
+            if (dialog.IsConfirm)
+            {
+                if (!Controller.GetController().DropCurrentTable())
+                    return;
+
+                var db = DBTreeView.FindChild<TreeViewItem>(_openDBName);
+                var table = DBTreeView.FindChild<TreeViewItem>(_openDBName + "_" + _openTableName);
+                db.Items.Remove(table);
+
+                GridForAddAndRemoveRow.Visibility = Visibility.Collapsed;
+                ButtonForModifyColumn.IsEnabled = false;
+                ButtonForDeleteTable.IsEnabled = false;
+                DataGridForContent.ItemsSource = null;
+            }
+        }
+
+        private void ButtonForDropDB_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new ConfirmationDialog(this, "Be sure to drop the database: " + _openDBName);
+            dialog.ShowDialog();
+
+            if (dialog.IsConfirm)
+            {
+                if (!Controller.GetController().DropCurrentDB())
+                    return;
+
+                var db = DBTreeView.FindChild<TreeViewItem>(_openDBName);
+                DBTreeView.Items.Remove(db);
+
+                OperationForRemoveDBTreeViewItem();
+            }
+        }
+
+        private void ButtonForCreateTable_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
